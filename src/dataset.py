@@ -16,7 +16,6 @@ class TurbulenceDataset(Dataset):
         else:
             self.data = full_data[split_idx:]
             
-        # Compute global stats for normalization
         self.mean = np.mean(self.data, axis=(0, 1, 2))
         self.std = np.std(self.data, axis=(0, 1, 2))
         
@@ -31,7 +30,7 @@ class TurbulenceDataset(Dataset):
         # Z-score normalization
         img = (img - self.mean) / (self.std + 1e-8)
         
-        # Convert to Tensor (H, W, C) -> (C, H, W)
+        # Convert to Tensor
         tensor = torch.from_numpy(img).float().permute(2, 0, 1)
         return tensor
 
