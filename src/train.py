@@ -9,7 +9,6 @@ from dataset import TurbulenceDataset
 from model import TurbulenceUNet
 from loss import PhysicsLoss, DivergenceLoss
 
-# Configuration
 BATCH_SIZE = 4
 LEARNING_RATE = 1e-4
 NUM_EPOCHS = 100
@@ -34,12 +33,10 @@ def train():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Training on {device}")
 
-    # Setup Data
     train_dataset = TurbulenceDataset(DATA_PATH, mode='train')
     train_loader = DataLoader(
         train_dataset, batch_size=BATCH_SIZE, shuffle=True)
 
-    # Setup Model & Loss
     model = TurbulenceUNet(upscale_factor=16).to(device)
     loss_phys = PhysicsLoss(TARGET_PATH, device=device, size=1024)
     loss_div = DivergenceLoss().to(device)
@@ -58,19 +55,16 @@ def train():
             coarse_imgs = coarse_imgs.to(device)
             optimizer.zero_grad()
 
-            # 1. Content Loss (Self-Supervised / ZSSR approach)
             coarse_down = F.adaptive_avg_pool2d(coarse_imgs, (32, 32))
             pred_512 = model(coarse_down)
             pred_verify = F.adaptive_avg_pool2d(pred_512, (64, 64))
 
             loss_content = F.mse_loss(pred_verify, coarse_imgs)
 
-            # 2. Physics & Divergence Loss (High-Res output)
             high_res_output = model(coarse_imgs)
             loss_physics = loss_phys(high_res_output)
             loss_divergence = loss_div(high_res_output)
 
-            # Total Loss
             total_loss = (W_CONTENT * loss_content) + \
                          (W_PHYSICS * loss_physics) + \
                          (W_DIV * loss_divergence)
@@ -78,7 +72,6 @@ def train():
             total_loss.backward()
             optimizer.step()
 
-            # Metrics
             epoch_metrics['total'] += total_loss.item()
             epoch_metrics['content'] += loss_content.item()
             epoch_metrics['phys'] += loss_physics.item()
@@ -91,7 +84,6 @@ def train():
                       f"Spec: {loss_physics.item():.4f} | "
                       f"Div: {loss_divergence.item():.4f}")
 
-        # Summary
         avg_loss = epoch_metrics['total'] / len(train_loader)
         duration = time.time() - start_time
         print(
