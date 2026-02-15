@@ -25,7 +25,7 @@ class TurbulenceUNet(nn.Module):
     def __init__(self, in_channels=3, out_channels=3, upscale_factor=16):
         super().__init__()
 
-        # Feature Extraction (Encoder)
+        # Encoder
         self.inc = DoubleConv(in_channels, 64)
         self.down1 = nn.Sequential(nn.MaxPool2d(2), DoubleConv(64, 128))
         self.down2 = nn.Sequential(nn.MaxPool2d(2), DoubleConv(128, 256))
@@ -36,7 +36,7 @@ class TurbulenceUNet(nn.Module):
         self.up2 = nn.ConvTranspose2d(128, 64, kernel_size=2, stride=2)
         self.conv_up2 = DoubleConv(128, 64)
 
-        # Super-Resolution Upsampler
+        # Upsampler
         n_upsamples = int(np.log2(upscale_factor))
         upsample_layers = []
         current_channels = 64
