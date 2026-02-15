@@ -14,7 +14,6 @@ class PhysicsLoss(nn.Module):
         self.max_k = int(self.target_spectrum.shape[0])
         self.criterion = nn.MSELoss()
 
-        # Precompute radial k-magnitude grid
         k_freq = torch.fft.fftfreq(size).to(device) * size
         kx, ky = torch.meshgrid(k_freq, k_freq, indexing='ij')
         self.k_mag = torch.sqrt(kx**2 + ky**2).round().long().flatten()
@@ -23,18 +22,15 @@ class PhysicsLoss(nn.Module):
         b, c, h, w = hr_field.shape
         fft_im = torch.fft.fft2(hr_field)
 
-        # Compute power spectrum manually to avoid complex tensor issues
         power_spectrum = fft_im.real**2 + fft_im.imag**2
         energy_2d = torch.sum(power_spectrum, dim=1).view(b, -1)
 
-        # Binning
         spectrum = torch.zeros((b, self.max_k + 1), device=hr_field.device)
         indices = self.k_mag.expand(b, -1)
         mask = indices < self.max_k
 
         spectrum.scatter_add_(1, indices * mask, energy_2d * mask)
 
-        # Log spectrum, excluding DC component
         return torch.log(spectrum[:, 1:self.max_k+1] + 1e-8)
 
     def forward(self, hr_guess):
